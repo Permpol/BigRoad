@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XAUUSD Big Road - Baccarat Style</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --felt: #1a5c2e;
+    --felt-dark: #0f3d1e;
+    --felt-light: #236b38;
+    --gold: #c9a84c;
+    --gold-light: #f0d080;
+    --gold-dark: #8b6914;
+    --blue: #1a3fa8;
+    --blue-light: #4169e1;
+    --red: #c0392b;
+    --red-light: #e74c3c;
+    --cream: #f5f0e0;
+    --dark: #0a1a0f;
+    --table-edge: #5c3a1e;
+    --table-rim: #8b5e2a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    font-family: 'Crimson Text', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  /* CASINO TABLE */
+  .casino-wrapper {
+    width: 100%;
+    max-width: 1200px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .table-outer {
+    background: linear-gradient(145deg, #6b3f12, #3d2008, #6b3f12);
+    border-radius: 180px 180px 40px 40px;
+    padding: 18px;
+    box-shadow:
+      0 0 0 4px #8b5e2a,
+      0 0 0 8px #5c3a1e,
+      0 20px 60px rgba(0,0,0,0.8),
+      inset 0 2px 6px rgba(255,200,100,0.2);
+    position: relative;
+  }
+
+  .table-inner {
+    background: radial-gradient(ellipse at 50% 30%, #236b38, #1a5c2e 50%, #0f3d1e);
+    border-radius: 160px 160px 30px 30px;
+    padding: 30px 40px 24px;
+    position: relative;
+    overflow: hidden;
+    min-height: 340px;
+  }
+
+  /* Felt texture */
+  .table-inner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px),
+      repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  /* Gold decorative lines */
+  .table-inner::after {
+    content: '';
+    position: absolute;
+    top: 15px; left: 15px; right: 15px; bottom: 15px;
+    border: 1px solid rgba(201,168,76,0.25);
+    border-radius: 150px 150px 22px 22px;
+    pointer-events: none;
+  }
+
+  .table-title {
+    font-family: 'Cinzel', serif;
+    text-align: center;
+    color: var(--gold-light);
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 8px;
+    text-shadow: 0 0 20px rgba(201,168,76,0.6), 0 2px 4px rgba(0,0,0,0.8);
+    margin-bottom: 4px;
+  }
+
+  .table-subtitle {
+    font-family: 'Cinzel', serif;
+    text-align: center;
+    color: rgba(201,168,76,0.6);
+    font-size: 11px;
+    letter-spacing: 4px;
+    margin-bottom: 20px;
+  }
+
+  /* Betting zones */
+  .betting-layout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 20px;
+  }
+
+  .bet-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    user-select: none;
+  }
+
+  .bet-zone-bullish {
+    background: linear-gradient(180deg, rgba(26,63,168,0.4), rgba(26,63,168,0.2));
+    border: 2px solid rgba(65,105,225,0.5);
+    border-radius: 12px 0 0 12px;
+    padding: 18px 32px;
+    min-width: 180px;
+  }
+
+  .bet-zone-bearish {
+    background: linear-gradient(180deg, rgba(192,57,43,0.4), rgba(192,57,43,0.2));
+    border: 2px solid rgba(231,76,60,0.5);
+    border-radius: 0 12px 12px 0;
+    padding: 18px 32px;
+    min-width: 180px;
+  }
+
+  .bet-zone-tie {
+    background: linear-gradient(180deg, rgba(30,80,30,0.6), rgba(30,80,30,0.3));
+    border-top: 2px solid rgba(201,168,76,0.4);
+    border-bottom: 2px solid rgba(201,168,76,0.4);
+    padding: 10px 20px;
+    min-width: 130px;
+    text-align: center;
+  }
+
+  .bet-zone:hover:not(.disabled) {
+    transform: translateY(-3px);
+    filter: brightness(1.3);
+  }
+
+  .bet-zone.selected {
+    filter: brightness(1.5);
+    box-shadow: 0 0 20px currentColor;
+  }
+
+  .bet-zone.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .zone-label {
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  }
+
+  .zone-sublabel {
+    font-size: 11px;
+    letter-spacing: 2px;
+    opacity: 0.7;
+    margin-top: 2px;
+  }
+
+  .zone-icon {
+    font-size: 28px;
+    margin-bottom: 4px;
+  }
+
+  .bet-zone-bullish .zone-label { color: #7aadff; }
+  .bet-zone-bearish .zone-label { color: #ff7a7a; }
+  .bet-zone-tie .zone-label { color: var(--gold-light); font-size: 13px; }
+  .bet-zone-tie .zone-sub { color: var(--gold); font-size: 10px; letter-spacing: 1px; }
+
+  /* Dragon decorations */
+  .dragon-left, .dragon-right {
+    position: absolute;
+    font-size: 48px;
+    opacity: 0.15;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .dragon-left { left: 30px; }
+  .dragon-right { right: 30px; transform: translateY(-50%) scaleX(-1); }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 8px;
+    padding: 10px 20px;
+    margin-top: 8px;
+  }
+
+  .status-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .status-label {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    color: rgba(201,168,76,0.6);
+    letter-spacing: 2px;
+  }
+
+  .status-value {
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    color: var(--gold-light);
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(201,168,76,0.4);
+  }
+
+  .status-value.alert {
+    color: #ff6b6b;
+    animation: pulse-red 0.5s ease infinite alternate;
+    text-shadow: 0 0 10px rgba(255,50,50,0.6);
+  }
+
+  .status-value.betting-open {
+    color: #6bff9e;
+    text-shadow: 0 0 10px rgba(50,255,100,0.5);
+  }
+
+  @keyframes pulse-red {
+    from { opacity: 1; }
+    to { opacity: 0.5; }
+  }
+
+  /* Timer ring */
+  .timer-container {
+    position: relative;
+    width: 70px;
+    height: 70px;
+  }
+
+  .timer-svg { transform: rotate(-90deg); }
+
+  .timer-track {
+    fill: none;
+    stroke: rgba(201,168,76,0.15);
+    stroke-width: 5;
+  }
+
+  .timer-progress {
+    fill: none;
+    stroke: var(--gold);
+    stroke-width: 5;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear, stroke 0.3s;
+  }
+
+  .timer-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gold-light);
+  }
+
+  /* Phase indicator */
+  .phase-badge {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-weight: 700;
+  }
+
+  .phase-betting {
+    background: rgba(50,200,100,0.2);
+    border: 1px solid rgba(50,200,100,0.5);
+    color: #6bff9e;
+    animation: glow-green 1s ease infinite alternate;
+  }
+
+  .phase-waiting {
+    background: rgba(201,168,76,0.15);
+    border: 1px solid rgba(201,168,76,0.3);
+    color: var(--gold);
+  }
+
+  .phase-closed {
+    background: rgba(200,50,50,0.2);
+    border: 1px solid rgba(200,50,50,0.4);
+    color: #ff7a7a;
+  }
+
+  @keyframes glow-green {
+    from { box-shadow: 0 0 5px rgba(50,200,100,0.3); }
+    to { box-shadow: 0 0 15px rgba(50,200,100,0.6); }
+  }
+
+  /* NOTIFICATION */
+  .notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: linear-gradient(135deg, #1a3fa8, #0f2570);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    padding: 16px 32px;
+    font-family: 'Cinzel', serif;
+    color: var(--gold-light);
+    font-size: 16px;
+    letter-spacing: 2px;
+    font-weight: 700;
+    text-align: center;
+    z-index: 1000;
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+  }
+
+  .notification.show {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .notification.alert-bet {
+    background: linear-gradient(135deg, #8b1a1a, #5c0f0f);
+    border-color: #ff6b6b;
+    color: #ffaaaa;
+    animation: shake 0.3s ease;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    25% { transform: translateX(calc(-50% - 6px)) translateY(0); }
+    75% { transform: translateX(calc(-50% + 6px)) translateY(0); }
+  }
+
+  /* BIG ROAD SECTION */
+  .bigroad-section {
+    background: linear-gradient(145deg, #0d1a10, #0a1208);
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  }
+
+  .bigroad-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .bigroad-title {
+    font-family: 'Cinzel', serif;
+    color: var(--gold);
+    font-size: 14px;
+    letter-spacing: 3px;
+    font-weight: 700;
+  }
+
+  .bigroad-stats {
+    display: flex;
+    gap: 16px;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+  }
+
+  .stat-bull { color: #7aadff; }
+  .stat-bear { color: #ff7a7a; }
+  .stat-total { color: rgba(201,168,76,0.7); }
+
+  .bigroad-grid-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+  }
+
+  .bigroad-grid {
+    display: grid;
+    grid-auto-columns: 36px;
+    grid-template-rows: repeat(6, 36px);
+    grid-auto-flow: column;
+    gap: 2px;
+    min-width: max-content;
+  }
+
+  .br-cell {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 3px;
+    position: relative;
+  }
+
+  .br-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2.5px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 700;
+    animation: pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes pop-in {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .br-bull {
+    border-color: #4169e1;
+    background: radial-gradient(circle at 35% 35%, rgba(100,150,255,0.3), rgba(26,63,168,0.1));
+    box-shadow: 0 0 8px rgba(65,105,225,0.4), inset 0 1px 3px rgba(255,255,255,0.1);
+  }
+
+  .br-bear {
+    border-color: #e74c3c;
+    background: radial-gradient(circle at 35% 35%, rgba(255,100,100,0.3), rgba(192,57,43,0.1));
+    box-shadow: 0 0 8px rgba(231,76,60,0.4), inset 0 1px 3px rgba(255,255,255,0.1);
+  }
+
+  /* OHLC Panel */
+  .ohlc-panel {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 8px;
+    padding: 12px 20px;
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    font-family: 'Crimson Text', serif;
+    font-size: 13px;
+  }
+
+  .ohlc-label {
+    color: rgba(201,168,76,0.6);
+    font-size: 10px;
+    letter-spacing: 1px;
+    display: block;
+  }
+
+  .ohlc-val {
+    color: var(--cream);
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .ohlc-val.up { color: #6bff9e; }
+  .ohlc-val.dn { color: #ff7a7a; }
+
+  /* Candle progress bar */
+  .candle-bar {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .candle-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold-dark), var(--gold));
+    border-radius: 3px;
+    transition: width 1s linear;
+  }
+
+  /* Selected bet indicator */
+  .selected-bet-display {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-weight: 700;
+  }
+
+  .sel-bull {
+    background: rgba(26,63,168,0.3);
+    border: 1px solid rgba(65,105,225,0.5);
+    color: #7aadff;
+  }
+
+  .sel-bear {
+    background: rgba(192,57,43,0.3);
+    border: 1px solid rgba(231,76,60,0.5);
+    color: #ff7a7a;
+  }
+
+  .sel-none {
+    background: rgba(100,100,100,0.2);
+    border: 1px solid rgba(150,150,150,0.3);
+    color: rgba(200,200,200,0.5);
+  }
+
+  /* Controls */
+  .controls-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 8px 18px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 700;
+  }
+
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: #0a0a0a;
+  }
+
+  .btn-ghost {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(200,200,200,0.7);
+  }
+
+  .btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
+
+  /* Pip filter */
+  .pip-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    color: rgba(201,168,76,0.7);
+    letter-spacing: 1px;
+  }
+
+  .pip-input {
+    width: 60px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 4px;
+    color: var(--gold-light);
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    padding: 4px 8px;
+    text-align: center;
+  }
+
+  /* Scrollbar */
+  .bigroad-grid-wrapper::-webkit-scrollbar { height: 4px; }
+  .bigroad-grid-wrapper::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+  .bigroad-grid-wrapper::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.3); border-radius: 2px; }
+
+  /* History log */
+  .history-log {
+    max-height: 100px;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 6px;
+    padding: 8px;
+  }
+
+  .log-entry {
+    font-size: 11px;
+    color: rgba(200,200,200,0.5);
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    display: flex;
+    gap: 8px;
+  }
+
+  .log-time { color: rgba(201,168,76,0.4); min-width: 100px; }
+  .log-bull { color: #4169e1; font-weight: 700; }
+  .log-bear { color: #e74c3c; font-weight: 700; }
+  .log-skip { color: rgba(150,150,150,0.5); font-style: italic; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .table-inner { padding: 20px 16px; }
+    .betting-layout { flex-direction: column; gap: 8px; }
+    .bet-zone-bullish, .bet-zone-bearish { border-radius: 10px; min-width: 200px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="casino-wrapper">
+
+  <!-- NOTIFICATION -->
+  <div class="notification" id="notification"></div>
+
+  <!-- CASINO TABLE -->
+  <div class="table-outer">
+    <div class="table-inner">
+      <div class="dragon-left">🐉</div>
+      <div class="dragon-right">🐉</div>
+
+      <div class="table-title">BACCARAT</div>
+      <div class="table-subtitle">XAUUSD · BIG ROAD EDITION</div>
+
+      <!-- BETTING LAYOUT -->
+      <div class="betting-layout">
+        <div class="bet-zone bet-zone-bullish" id="btnBull" onclick="placeBet('bull')">
+          <div class="zone-icon">📈</div>
+          <div class="zone-label">BULLISH</div>
+          <div class="zone-sublabel">PLAYER · BUY</div>
+        </div>
+
+        <div class="bet-zone-tie">
+          <div class="zone-label">TIE</div>
+          <div class="zone-sub">SKIP · 8 TO 1</div>
+        </div>
+
+        <div class="bet-zone bet-zone-bearish" id="btnBear" onclick="placeBet('bear')">
+          <div class="zone-icon">📉</div>
+          <div class="zone-label">BEARISH</div>
+          <div class="zone-sublabel">BANKER · SELL</div>
+        </div>
+      </div>
+
+      <!-- STATUS BAR -->
+      <div class="status-bar">
+        <div class="status-item">
+          <div class="status-label">ROUND</div>
+          <div class="status-value" id="roundNum">—</div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-label">PHASE</div>
+          <div class="phase-badge phase-waiting" id="phaseBadge">LOADING</div>
+        </div>
+
+        <div class="timer-container">
+          <svg class="timer-svg" width="70" height="70" viewBox="0 0 70 70">
+            <circle class="timer-track" cx="35" cy="35" r="30"/>
+            <circle class="timer-progress" id="timerRing" cx="35" cy="35" r="30"
+              stroke-dasharray="188.5" stroke-dashoffset="0"/>
+          </svg>
+          <div class="timer-text" id="timerText">—</div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-label">CANDLE TIME</div>
+          <div class="status-value" id="candleTime">—</div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-label">SELECTED</div>
+          <div class="selected-bet-display sel-none" id="selectedDisplay">NONE</div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-label">PRICE</div>
+          <div class="status-value" id="currentPrice">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OHLC PANEL -->
+  <div class="ohlc-panel">
+    <div>
+      <span class="ohlc-label">OPEN</span>
+      <span class="ohlc-val" id="ohlcO">—</span>
+    </div>
+    <div>
+      <span class="ohlc-label">HIGH</span>
+      <span class="ohlc-val up" id="ohlcH">—</span>
+    </div>
+    <div>
+      <span class="ohlc-label">LOW</span>
+      <span class="ohlc-val dn" id="ohlcL">—</span>
+    </div>
+    <div>
+      <span class="ohlc-label">CLOSE</span>
+      <span class="ohlc-val" id="ohlcC">—</span>
+    </div>
+    <div>
+      <span class="ohlc-label">BODY (PIPS)</span>
+      <span class="ohlc-val" id="ohlcPips">—</span>
+    </div>
+    <div style="flex:1;">
+      <span class="ohlc-label">CANDLE PROGRESS</span>
+      <div class="candle-bar"><div class="candle-bar-fill" id="candleBarFill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls-row">
+    <label style="display:none;" for="csvFile">
+      <button class="btn btn-gold" onclick="document.getElementById('csvFile').click()">📂 โหลดไฟล์ CSV</button>
+    </label>
+    <button class="btn btn-gold" onclick="document.getElementById('csvFile').click()">📂 โหลดไฟล์ CSV</button>
+    <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="loadCSV(this)">
+
+    <div class="pip-filter">
+      <span>MIN BODY (PIPS):</span>
+      <input type="number" class="pip-input" id="pipFilter" value="5" min="0" max="100">
+    </div>
+
+    <div class="pip-filter">
+      <span>CANDLE (MIN):</span>
+      <input type="number" class="pip-input" id="candleMin" value="5" min="1" max="60">
+    </div>
+
+    <button class="btn btn-ghost" onclick="clearRoad()">🗑 ล้าง Road</button>
+    <button class="btn btn-ghost" onclick="toggleLog()">📋 Log</button>
+  </div>
+
+  <!-- BIG ROAD -->
+  <div class="bigroad-section">
+    <div class="bigroad-header">
+      <div class="bigroad-title">⬤ BIG ROAD</div>
+      <div class="bigroad-stats">
+        <span class="stat-bull" id="statBull">BULL: 0</span>
+        <span class="stat-bear" id="statBear">BEAR: 0</span>
+        <span class="stat-total" id="statTotal">TOTAL: 0</span>
+      </div>
+    </div>
+    <div class="bigroad-grid-wrapper">
+      <div class="bigroad-grid" id="bigRoadGrid"></div>
+    </div>
+  </div>
+
+  <!-- HISTORY LOG -->
+  <div class="history-log" id="historyLog" style="display:none"></div>
+
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let allTicks = [];         // {ts, price}
+let candles5m = [];        // precomputed 5m candles
+let currentCandleIdx = 0;
+let gameRunning = false;
+let tickSimInterval = null;
+let countdownInterval = null;
+
+let currentCandle = null;  // {open,high,low,close,startTs,endTs}
+let selectedBet = null;    // 'bull' | 'bear' | null
+let phaseTimer = 0;        // seconds remaining in phase
+let candleDuration = 300;  // seconds per candle (5 min)
+let bettingWindow = 30;    // last 30s = betting open
+
+// Big Road state
+let bigRoad = [];   // array of columns, each column = array of {type:'bull'|'bear'}
+let bullCount = 0, bearCount = 0;
+let logEntries = [];
+
+const ROWS = 6;
+
+// ─── CSV LOADING ──────────────────────────────────────────────────────────────
+function loadCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.split('\n').slice(1); // skip header
+    allTicks = [];
+    for (const line of lines) {
+      const parts = line.trim().split(',');
+      if (parts.length < 2) continue;
+      const dateStr = parts[0].trim(); // "2026.01.01 23:05:29"
+      const price = parseFloat(parts[1]);
+      if (isNaN(price)) continue;
+      // parse date
+      const ts = parseDate(dateStr);
+      if (ts) allTicks.push({ ts, price });
+    }
+    if (allTicks.length === 0) { showNotif('ไม่พบข้อมูลในไฟล์', false); return; }
+    buildCandles();
+    startGame();
+  };
+  reader.readAsText(file);
+}
+
+function parseDate(s) {
+  // "2026.01.01 23:05:29"
+  try {
+    const [datePart, timePart] = s.split(' ');
+    const [y, m, d] = datePart.split('.');
+    const [hh, mm, ss] = timePart.split(':');
+    return new Date(Date.UTC(+y, +m-1, +d, +hh, +mm, +ss)).getTime();
+  } catch { return null; }
+}
+
+function buildCandles() {
+  candleDuration = parseInt(document.getElementById('candleMin').value) * 60 || 300;
+  const ms = candleDuration * 1000;
+  candles5m = [];
+  if (allTicks.length === 0) return;
+
+  let startTs = Math.floor(allTicks[0].ts / ms) * ms;
+  let candle = null;
+
+  for (const tick of allTicks) {
+    const slot = Math.floor(tick.ts / ms) * ms;
+    if (!candle || slot !== candle.startTs) {
+      if (candle) candles5m.push(candle);
+      candle = { open: tick.price, high: tick.price, low: tick.price, close: tick.price, startTs: slot, endTs: slot + ms };
+    } else {
+      candle.high = Math.max(candle.high, tick.price);
+      candle.low = Math.min(candle.low, tick.price);
+      candle.close = tick.price;
+    }
+  }
+  if (candle) candles5m.push(candle);
+
+  showNotif(`โหลดสำเร็จ: ${allTicks.length.toLocaleString()} ticks → ${candles5m.length} แท่งเทียน`, true);
+}
+
+// ─── GAME LOOP ────────────────────────────────────────────────────────────────
+function startGame() {
+  if (gameRunning) stopGame();
+  currentCandleIdx = 0;
+  bigRoad = [];
+  bullCount = 0; bearCount = 0;
+  logEntries = [];
+  selectedBet = null;
+  gameRunning = true;
+
+  // Pre-calculate all candles silently (background)
+  // Already done in candles5m
+
+  runNextCandle();
+}
+
+function stopGame() {
+  clearInterval(tickSimInterval);
+  clearInterval(countdownInterval);
+  gameRunning = false;
+}
+
+function runNextCandle() {
+  if (!gameRunning) return;
+  if (currentCandleIdx >= candles5m.length) {
+    updatePhase('FINISHED', false);
+    showNotif('จบข้อมูลแล้ว', true);
+    return;
+  }
+
+  currentCandle = candles5m[currentCandleIdx];
+  selectedBet = null;
+  updateSelectedDisplay();
+
+  // Find ticks for this candle
+  const candleTicks = allTicks.filter(t => t.ts >= currentCandle.startTs && t.ts < currentCandle.endTs);
+  let tickIdx = 0;
+  const tickIntervalMs = candleDuration > 0 ? (3000 / Math.max(candleTicks.length, 1)) : 200; // replay at speed
+
+  // Timing: simulate candle in real-ish time (compressed)
+  // We'll do tick-by-tick replay over 4.5 seconds real time (candle duration compressed)
+  // Phase: first 70% = CLOSED (wait), last 30% = BETTING OPEN
+
+  const replayDuration = 5000; // 5 seconds real time per candle
+  const bettingStartAt = replayDuration * 0.6; // betting opens at 60%
+  const startReal = Date.now();
+
+  updateRound(currentCandleIdx + 1);
+  updateOHLC(currentCandle);
+
+  // Reset candle progress
+  document.getElementById('candleBarFill').style.width = '0%';
+
+  let bettingOpened = false;
+  let candleClosed = false;
+
+  clearInterval(tickSimInterval);
+  clearInterval(countdownInterval);
+
+  // Main update loop
+  tickSimInterval = setInterval(() => {
+    const elapsed = Date.now() - startReal;
+    const progress = Math.min(elapsed / replayDuration, 1);
+
+    // Progress bar
+    document.getElementById('candleBarFill').style.width = (progress * 100) + '%';
+
+    // Simulate current price (interpolate ticks)
+    if (candleTicks.length > 0) {
+      const tickPos = Math.floor(progress * (candleTicks.length - 1));
+      const tick = candleTicks[Math.min(tickPos, candleTicks.length-1)];
+      updatePrice(tick.price, currentCandle);
+    }
+
+    // Countdown timer
+    const remaining = Math.max(0, replayDuration - elapsed);
+    const remainSec = Math.ceil(remaining / 1000);
+
+    // Betting phase: last 40% of candle
+    if (!bettingOpened && elapsed >= bettingStartAt) {
+      bettingOpened = true;
+      openBetting();
+    }
+
+    if (bettingOpened && !candleClosed) {
+      const bettingRemain = Math.max(0, replayDuration - elapsed);
+      updateTimerRing(bettingRemain / (replayDuration * 0.4), bettingRemain / 1000, true);
+    } else if (!bettingOpened) {
+      const waitRemain = Math.max(0, bettingStartAt - elapsed);
+      updateTimerRing(waitRemain / bettingStartAt, Math.ceil(waitRemain / 1000), false);
+    }
+
+    // Candle close
+    if (progress >= 1 && !candleClosed) {
+      candleClosed = true;
+      clearInterval(tickSimInterval);
+      closeCandle();
+    }
+  }, 100);
+}
+
+function openBetting() {
+  updatePhase('PLACE YOUR BET!', true);
+  enableBets(true);
+  showNotif('⚡ วางเดิมพัน! BULLISH หรือ BEARISH?', true, 'alert');
+
+  // 30s warning sound effect via visual pulse
+  document.getElementById('btnBull').style.animation = 'none';
+  document.getElementById('btnBear').style.animation = 'none';
+}
+
+function closeCandle() {
+  enableBets(false);
+  updatePhase('RESULT', false);
+
+  const c = currentCandle;
+  const body = Math.abs(c.close - c.open);
+  const bodyPips = body * 10; // XAUUSD: 1 pip = 0.1
+  const minPips = parseFloat(document.getElementById('pipFilter').value) || 0;
+
+  let result = null;
+  if (bodyPips < minPips || body === 0) {
+    result = null; // TIE / SKIP
+  } else if (c.close > c.open) {
+    result = 'bull';
+  } else {
+    result = 'bear';
+  }
+
+  // Log
+  const timeStr = new Date(c.startTs).toUTCString().slice(5, 22);
+  addLog(timeStr, result, bodyPips, selectedBet);
+
+  // Only plot if user placed a bet
+  if (selectedBet !== null && result !== null) {
+    plotBigRoad(result);
+  } else if (selectedBet !== null && result === null) {
+    // Tie/skip - no plot
+  }
+  // If no bet placed, don't plot regardless
+
+  selectedBet = null;
+  updateSelectedDisplay();
+
+  // Next candle after brief pause
+  currentCandleIdx++;
+  setTimeout(() => {
+    if (gameRunning) runNextCandle();
+  }, 1200);
+}
+
+// ─── BIG ROAD LOGIC ───────────────────────────────────────────────────────────
+function plotBigRoad(type) {
+  if (bigRoad.length === 0) {
+    bigRoad.push([type]);
+  } else {
+    const lastCol = bigRoad[bigRoad.length - 1];
+    const lastType = lastCol[lastCol.length - 1];
+    if (lastType === type) {
+      // Same type: go down in column
+      if (lastCol.length < ROWS) {
+        lastCol.push(type);
+      } else {
+        // Column full: start new column at same row
+        bigRoad.push([type]);
+      }
+    } else {
+      // Different type: new column
+      bigRoad.push([type]);
+    }
+  }
+
+  if (type === 'bull') bullCount++;
+  else bearCount++;
+
+  renderBigRoad();
+  updateStats();
+}
+
+function renderBigRoad() {
+  const grid = document.getElementById('bigRoadGrid');
+  grid.innerHTML = '';
+
+  // Determine total columns needed
+  const totalCols = Math.max(bigRoad.length, 20);
+
+  for (let col = 0; col < bigRoad.length; col++) {
+    const column = bigRoad[col];
+    for (let row = 0; row < ROWS; row++) {
+      const cell = document.createElement('div');
+      cell.className = 'br-cell';
+      cell.style.gridColumn = col + 1;
+      cell.style.gridRow = row + 1;
+
+      if (row < column.length) {
+        const type = column[row];
+        const circle = document.createElement('div');
+        circle.className = `br-circle ${type === 'bull' ? 'br-bull' : 'br-bear'}`;
+        circle.textContent = type === 'bull' ? '▲' : '▼';
+        cell.appendChild(circle);
+      }
+
+      grid.appendChild(cell);
+    }
+  }
+
+  // Add empty columns for visual padding
+  for (let col = bigRoad.length; col < totalCols; col++) {
+    for (let row = 0; row < ROWS; row++) {
+      const cell = document.createElement('div');
+      cell.className = 'br-cell';
+      cell.style.gridColumn = col + 1;
+      cell.style.gridRow = row + 1;
+      grid.appendChild(cell);
+    }
+  }
+
+  // Scroll to end
+  const wrapper = document.querySelector('.bigroad-grid-wrapper');
+  wrapper.scrollLeft = wrapper.scrollWidth;
+}
+
+// ─── UI HELPERS ───────────────────────────────────────────────────────────────
+function placeBet(type) {
+  const phase = document.getElementById('phaseBadge').textContent;
+  if (!phase.includes('BET')) { showNotif('ยังไม่ถึงเวลาแทง!', false); return; }
+  if (!gameRunning) return;
+
+  selectedBet = type;
+  updateSelectedDisplay();
+
+  document.getElementById('btnBull').classList.toggle('selected', type === 'bull');
+  document.getElementById('btnBear').classList.toggle('selected', type === 'bear');
+
+  showNotif(type === 'bull' ? '📈 เลือก BULLISH แล้ว!' : '📉 เลือก BEARISH แล้ว!', true);
+}
+
+function updateSelectedDisplay() {
+  const el = document.getElementById('selectedDisplay');
+  if (!selectedBet) {
+    el.textContent = 'NONE';
+    el.className = 'selected-bet-display sel-none';
+  } else if (selectedBet === 'bull') {
+    el.textContent = '▲ BULL';
+    el.className = 'selected-bet-display sel-bull';
+  } else {
+    el.textContent = '▼ BEAR';
+    el.className = 'selected-bet-display sel-bear';
+  }
+}
+
+function updateRound(n) {
+  document.getElementById('roundNum').textContent = '#' + n;
+}
+
+function updatePhase(text, isBetting) {
+  const el = document.getElementById('phaseBadge');
+  el.textContent = text;
+  el.className = 'phase-badge ' + (isBetting ? 'phase-betting' : text === 'FINISHED' ? 'phase-closed' : 'phase-waiting');
+}
+
+function updateTimerRing(fraction, sec, isBetting) {
+  const circumference = 188.5;
+  const offset = circumference * (1 - Math.max(0, Math.min(1, fraction)));
+  const ring = document.getElementById('timerRing');
+  const text = document.getElementById('timerText');
+  ring.style.strokeDashoffset = offset;
+  ring.style.stroke = isBetting ? (sec <= 10 ? '#ff6b6b' : '#6bff9e') : '#c9a84c';
+  text.textContent = Math.ceil(sec) + 's';
+  text.className = isBetting && sec <= 10 ? 'timer-text' : 'timer-text';
+  text.style.color = isBetting ? (sec <= 10 ? '#ff6b6b' : '#6bff9e') : '#c9a84c';
+}
+
+function updatePrice(price, candle) {
+  const el = document.getElementById('currentPrice');
+  el.textContent = price.toFixed(3);
+  el.className = 'status-value ' + (price >= candle.open ? 'betting-open' : 'alert');
+  document.getElementById('ohlcC').textContent = price.toFixed(3);
+  document.getElementById('ohlcC').className = 'ohlc-val ' + (price >= candle.open ? 'up' : 'dn');
+}
+
+function updateOHLC(c) {
+  document.getElementById('ohlcO').textContent = c.open.toFixed(3);
+  document.getElementById('ohlcH').textContent = c.high.toFixed(3);
+  document.getElementById('ohlcL').textContent = c.low.toFixed(3);
+  document.getElementById('ohlcC').textContent = c.close.toFixed(3);
+  const pips = (Math.abs(c.close - c.open) * 10).toFixed(1);
+  const pipsEl = document.getElementById('ohlcPips');
+  pipsEl.textContent = pips;
+  pipsEl.className = 'ohlc-val ' + (c.close > c.open ? 'up' : 'dn');
+
+  // Candle time
+  const dt = new Date(c.startTs);
+  document.getElementById('candleTime').textContent =
+    dt.toUTCString().slice(5, 17);
+}
+
+function updateStats() {
+  document.getElementById('statBull').textContent = 'BULL: ' + bullCount;
+  document.getElementById('statBear').textContent = 'BEAR: ' + bearCount;
+  document.getElementById('statTotal').textContent = 'TOTAL: ' + (bullCount + bearCount);
+}
+
+function enableBets(on) {
+  document.getElementById('btnBull').classList.toggle('disabled', !on);
+  document.getElementById('btnBear').classList.toggle('disabled', !on);
+}
+
+let notifTimeout;
+function showNotif(msg, isGood, style) {
+  const el = document.getElementById('notification');
+  el.textContent = msg;
+  el.className = 'notification show' + (style === 'alert' ? ' alert-bet' : '');
+  clearTimeout(notifTimeout);
+  notifTimeout = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function addLog(time, result, pips, bet) {
+  const entry = { time, result, pips: pips.toFixed(1), bet };
+  logEntries.unshift(entry);
+  if (logEntries.length > 50) logEntries.pop();
+  renderLog();
+}
+
+function renderLog() {
+  const log = document.getElementById('historyLog');
+  log.innerHTML = logEntries.map(e => {
+    const resClass = e.result === 'bull' ? 'log-bull' : e.result === 'bear' ? 'log-bear' : 'log-skip';
+    const resText = e.result === 'bull' ? '▲ BULL' : e.result === 'bear' ? '▼ BEAR' : '— SKIP';
+    const betText = e.bet ? (e.bet === 'bull' ? '▲' : '▼') : '✗';
+    const plotted = e.bet && e.result ? '✓ PLOT' : '✗';
+    return `<div class="log-entry">
+      <span class="log-time">${e.time}</span>
+      <span class="${resClass}">${resText}</span>
+      <span style="color:rgba(200,200,200,0.4)">BODY:${e.pips}p</span>
+      <span style="color:rgba(201,168,76,0.5)">BET:${betText}</span>
+      <span style="color:rgba(100,200,100,0.5)">${plotted}</span>
+    </div>`;
+  }).join('');
+}
+
+function clearRoad() {
+  bigRoad = []; bullCount = 0; bearCount = 0;
+  renderBigRoad(); updateStats();
+}
+
+function toggleLog() {
+  const log = document.getElementById('historyLog');
+  log.style.display = log.style.display === 'none' ? 'block' : 'none';
+}
+
+// Initial render
+renderBigRoad();
+enableBets(false);
+updatePhase('LOAD CSV', false);
+showNotif('กรุณาโหลดไฟล์ CSV เพื่อเริ่มต้น', true);
+</script>
+</body>
+</html>

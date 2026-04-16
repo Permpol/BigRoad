@@ -750,6 +750,20 @@
       <input type="number" class="pip-input" id="bgTime" value="10" min="1" max="60" step="1">
     </div>
 
+    <div class="pip-filter">
+      <span>SPEED:</span>
+      <select class="pip-input" id="speedSelect" style="width:auto;padding:4px 6px;">
+        <option value="1">1x (ปกติ)</option>
+        <option value="2">2x</option>
+        <option value="5">5x</option>
+        <option value="10">10x</option>
+        <option value="30">30x</option>
+        <option value="60">60x</option>
+        <option value="300">300x (Backtest)</option>
+        <option value="0">MAX (ข้ามเวลา)</option>
+      </select>
+    </div>
+
     <button class="btn btn-ghost" onclick="clearRoad()">🗑 ล้าง Road</button>
     <button class="btn btn-ghost" onclick="toggleLog()">📋 Log</button>
   </div>
@@ -909,8 +923,10 @@ function runNextCandle() {
 
   const bgMinutes = parseFloat(document.getElementById('bgTime').value) || 10;
   const betMinutes = parseFloat(document.getElementById('betTime').value) || 2;
-  const replayDuration = bgMinutes * 60 * 1000; // total round = BG TIME (includes BET)
-  const betEndAt = betMinutes * 60 * 1000;       // betting closes after BET TIME
+  const speed = parseFloat(document.getElementById('speedSelect').value);
+  const isMaxSpeed = (speed === 0);
+  const replayDuration = isMaxSpeed ? 1 : (bgMinutes * 60 * 1000) / speed;
+  const betEndAt = isMaxSpeed ? 1 : (betMinutes * 60 * 1000) / speed;
   const startReal = Date.now();
 
   updateRound(currentCandleIdx + 1);
@@ -927,7 +943,8 @@ function runNextCandle() {
   clearInterval(tickSimInterval);
   clearInterval(countdownInterval);
 
-  // Main update loop
+  // Main update loop (tick faster at high speed)
+  const tickRate = isMaxSpeed ? 10 : Math.max(10, 100 / Math.max(speed, 1));
   tickSimInterval = setInterval(() => {
     const elapsed = Date.now() - startReal;
     const progress = Math.min(elapsed / replayDuration, 1);
@@ -945,7 +962,8 @@ function runNextCandle() {
     // Phase 1: Betting open (0 → betEnd)
     if (!bettingClosed && elapsed < betEndAt) {
       const betRemain = Math.max(0, betEndAt - elapsed);
-      updateTimerRing(betRemain / betEndAt, betRemain / 1000, true);
+      const displaySec = isMaxSpeed ? 0 : betRemain / 1000;
+      updateTimerRing(betRemain / betEndAt, displaySec, true);
     }
 
     // Transition: close betting
@@ -953,14 +971,15 @@ function runNextCandle() {
       bettingClosed = true;
       enableBets(false);
       updatePhase('WAITING...', false);
-      showNotif('ปิดรับเดิมพัน - รอผล...', true);
+      if (!isMaxSpeed) showNotif('ปิดรับเดิมพัน - รอผล...', true);
     }
 
     // Phase 2: Waiting (betEnd → bgEnd)
     if (bettingClosed && !candleClosed) {
       const waitRemain = Math.max(0, replayDuration - elapsed);
       const waitDuration = replayDuration - betEndAt;
-      updateTimerRing(waitRemain / waitDuration, waitRemain / 1000, false);
+      const displaySec = isMaxSpeed ? 0 : waitRemain / 1000;
+      updateTimerRing(waitRemain / waitDuration, displaySec, false);
     }
 
     // Result
@@ -969,7 +988,7 @@ function runNextCandle() {
       clearInterval(tickSimInterval);
       closeCandle();
     }
-  }, 100);
+  }, tickRate);
 }
 
 function openBetting() {
@@ -1016,11 +1035,13 @@ function closeCandle() {
   selectedBet = null;
   updateSelectedDisplay();
 
-  // Next candle after brief pause
+  // Next candle after brief pause (scaled by speed)
+  const spd = parseFloat(document.getElementById('speedSelect').value);
+  const pause = spd === 0 ? 0 : Math.max(50, 1200 / (spd || 1));
   currentCandleIdx++;
   setTimeout(() => {
     if (gameRunning) runNextCandle();
-  }, 1200);
+  }, pause);
 }
 
 // ─── BIG ROAD LOGIC (L-pattern / Dragon Tail) ───────────────────────────────
@@ -1236,6 +1257,14 @@ document.getElementById('bgTime').addEventListener('change', () => {
 });
 document.getElementById('candleMin').addEventListener('change', () => {
   if (allTicks.length > 0) { buildCandles(); if (gameRunning) { stopGame(); startGame(); } }
+});
+// Speed change: restart current candle with new speed (no full reset)
+document.getElementById('speedSelect').addEventListener('change', () => {
+  if (gameRunning) {
+    clearInterval(tickSimInterval);
+    clearInterval(countdownInterval);
+    runNextCandle(); // re-run current candle at new speed
+  }
 });
 
 // Initial render

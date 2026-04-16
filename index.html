@@ -740,6 +740,16 @@
       <input type="number" class="pip-input" id="candleMin" value="5" min="1" max="60">
     </div>
 
+    <div class="pip-filter">
+      <span>BET TIME (MIN):</span>
+      <input type="number" class="pip-input" id="betTime" value="2" min="0.5" max="30" step="0.5">
+    </div>
+
+    <div class="pip-filter">
+      <span>BG TIME (MIN):</span>
+      <input type="number" class="pip-input" id="bgTime" value="10" min="1" max="60" step="1">
+    </div>
+
     <button class="btn btn-ghost" onclick="clearRoad()">🗑 ล้าง Road</button>
     <button class="btn btn-ghost" onclick="toggleLog()">📋 Log</button>
   </div>
@@ -749,8 +759,8 @@
     <div class="bigroad-header">
       <div class="bigroad-title">⬤ BIG ROAD</div>
       <div class="bigroad-stats">
-        <span class="stat-bull" id="statBull">BULL: 0</span>
-        <span class="stat-bear" id="statBear">BEAR: 0</span>
+        <span class="stat-bull" id="statBull">WIN: 0</span>
+        <span class="stat-bear" id="statBear">LOSS: 0</span>
         <span class="stat-total" id="statTotal">TOTAL: 0</span>
       </div>
     </div>
@@ -779,9 +789,13 @@ let phaseTimer = 0;        // seconds remaining in phase
 let candleDuration = 300;  // seconds per candle (5 min)
 let bettingWindow = 30;    // last 30s = betting open
 
-// Big Road state
-let bigRoad = [];   // array of columns, each column = array of {type:'bull'|'bear'}
-let bullCount = 0, bearCount = 0;
+// Big Road state (grid-based for L-pattern / dragon tail)
+let roadEntries = []; // {type, col, row}
+let gridMap = {};      // "col,row" -> type
+let maxColUsed = -1;
+let curCol = 0, curRow = 0;
+let prevType = null;
+let bullCount = 0, bearCount = 0; // win / loss counts
 let logEntries = [];
 
 const ROWS = 6;
@@ -850,7 +864,11 @@ function buildCandles() {
 function startGame() {
   if (gameRunning) stopGame();
   currentCandleIdx = 0;
-  bigRoad = [];
+  roadEntries = [];
+  gridMap = {};
+  maxColUsed = -1;
+  curCol = 0; curRow = 0;
+  prevType = null;
   bullCount = 0; bearCount = 0;
   logEntries = [];
   selectedBet = null;
@@ -889,8 +907,10 @@ function runNextCandle() {
   // We'll do tick-by-tick replay over 4.5 seconds real time (candle duration compressed)
   // Phase: first 70% = CLOSED (wait), last 30% = BETTING OPEN
 
-  const replayDuration = 5000; // 5 seconds real time per candle
-  const bettingStartAt = replayDuration * 0.6; // betting opens at 60%
+  const bgMinutes = parseFloat(document.getElementById('bgTime').value) || 10;
+  const betMinutes = parseFloat(document.getElementById('betTime').value) || 2;
+  const replayDuration = (bgMinutes + betMinutes) * 60 * 1000; // ms
+  const bettingStartAt = bgMinutes * 60 * 1000; // betting opens after BG phase
   const startReal = Date.now();
 
   updateRound(currentCandleIdx + 1);
@@ -932,7 +952,8 @@ function runNextCandle() {
 
     if (bettingOpened && !candleClosed) {
       const bettingRemain = Math.max(0, replayDuration - elapsed);
-      updateTimerRing(bettingRemain / (replayDuration * 0.4), bettingRemain / 1000, true);
+      const bettingDuration = replayDuration - bettingStartAt;
+      updateTimerRing(bettingRemain / bettingDuration, bettingRemain / 1000, true);
     } else if (!bettingOpened) {
       const waitRemain = Math.max(0, bettingStartAt - elapsed);
       updateTimerRing(waitRemain / bettingStartAt, Math.ceil(waitRemain / 1000), false);
@@ -979,9 +1000,10 @@ function closeCandle() {
   const timeStr = new Date(c.startTs).toUTCString().slice(5, 22);
   addLog(timeStr, result, bodyPips, selectedBet);
 
-  // Only plot if user placed a bet
+  // Plot based on user's prediction outcome (win/loss), not actual result
   if (selectedBet !== null && result !== null) {
-    plotBigRoad(result);
+    const isWin = (selectedBet === result);
+    plotBigRoad(isWin ? 'bull' : 'bear'); // BULL = WIN, BEAR = LOSS
   } else if (selectedBet !== null && result === null) {
     // Tie/skip - no plot
   }
@@ -997,26 +1019,36 @@ function closeCandle() {
   }, 1200);
 }
 
-// ─── BIG ROAD LOGIC ───────────────────────────────────────────────────────────
+// ─── BIG ROAD LOGIC (L-pattern / Dragon Tail) ───────────────────────────────
 function plotBigRoad(type) {
-  if (bigRoad.length === 0) {
-    bigRoad.push([type]);
-  } else {
-    const lastCol = bigRoad[bigRoad.length - 1];
-    const lastType = lastCol[lastCol.length - 1];
-    if (lastType === type) {
-      // Same type: go down in column
-      if (lastCol.length < ROWS) {
-        lastCol.push(type);
-      } else {
-        // Column full: start new column at same row
-        bigRoad.push([type]);
-      }
+  let col, row;
+
+  if (roadEntries.length === 0) {
+    // First entry
+    col = 0;
+    row = 0;
+  } else if (type === prevType) {
+    // Same type: try going down, else dragon tail (go right)
+    if (curRow + 1 < ROWS && !gridMap[(curCol) + "," + (curRow + 1)]) {
+      col = curCol;
+      row = curRow + 1;
     } else {
-      // Different type: new column
-      bigRoad.push([type]);
+      // Dragon tail: extend right at same row (L-pattern)
+      col = curCol + 1;
+      row = curRow;
     }
+  } else {
+    // Different type: start new column from row 0
+    col = maxColUsed + 1;
+    row = 0;
   }
+
+  roadEntries.push({ type, col, row });
+  gridMap[col + "," + row] = type;
+  maxColUsed = Math.max(maxColUsed, col);
+  curCol = col;
+  curRow = row;
+  prevType = type;
 
   if (type === 'bull') bullCount++;
   else bearCount++;
@@ -1029,36 +1061,23 @@ function renderBigRoad() {
   const grid = document.getElementById('bigRoadGrid');
   grid.innerHTML = '';
 
-  // Determine total columns needed
-  const totalCols = Math.max(bigRoad.length, 20);
+  const totalCols = Math.max(maxColUsed + 1, 20);
 
-  for (let col = 0; col < bigRoad.length; col++) {
-    const column = bigRoad[col];
+  for (let col = 0; col < totalCols; col++) {
     for (let row = 0; row < ROWS; row++) {
       const cell = document.createElement('div');
       cell.className = 'br-cell';
       cell.style.gridColumn = col + 1;
       cell.style.gridRow = row + 1;
 
-      if (row < column.length) {
-        const type = column[row];
+      const type = gridMap[col + "," + row];
+      if (type) {
         const circle = document.createElement('div');
         circle.className = `br-circle ${type === 'bull' ? 'br-bull' : 'br-bear'}`;
         circle.textContent = type === 'bull' ? '▲' : '▼';
         cell.appendChild(circle);
       }
 
-      grid.appendChild(cell);
-    }
-  }
-
-  // Add empty columns for visual padding
-  for (let col = bigRoad.length; col < totalCols; col++) {
-    for (let row = 0; row < ROWS; row++) {
-      const cell = document.createElement('div');
-      cell.className = 'br-cell';
-      cell.style.gridColumn = col + 1;
-      cell.style.gridRow = row + 1;
       grid.appendChild(cell);
     }
   }
@@ -1114,7 +1133,9 @@ function updateTimerRing(fraction, sec, isBetting) {
   const text = document.getElementById('timerText');
   ring.style.strokeDashoffset = offset;
   ring.style.stroke = isBetting ? (sec <= 10 ? '#ff6b6b' : '#6bff9e') : '#c9a84c';
-  text.textContent = Math.ceil(sec) + 's';
+  const mins = Math.floor(sec / 60);
+  const secs = Math.ceil(sec % 60);
+  text.textContent = mins > 0 ? mins + ':' + String(secs).padStart(2, '0') : secs + 's';
   text.className = isBetting && sec <= 10 ? 'timer-text' : 'timer-text';
   text.style.color = isBetting ? (sec <= 10 ? '#ff6b6b' : '#6bff9e') : '#c9a84c';
 }
@@ -1144,8 +1165,8 @@ function updateOHLC(c) {
 }
 
 function updateStats() {
-  document.getElementById('statBull').textContent = 'BULL: ' + bullCount;
-  document.getElementById('statBear').textContent = 'BEAR: ' + bearCount;
+  document.getElementById('statBull').textContent = 'WIN: ' + bullCount;
+  document.getElementById('statBear').textContent = 'LOSS: ' + bearCount;
   document.getElementById('statTotal').textContent = 'TOTAL: ' + (bullCount + bearCount);
 }
 
@@ -1188,7 +1209,12 @@ function renderLog() {
 }
 
 function clearRoad() {
-  bigRoad = []; bullCount = 0; bearCount = 0;
+  roadEntries = [];
+  gridMap = {};
+  maxColUsed = -1;
+  curCol = 0; curRow = 0;
+  prevType = null;
+  bullCount = 0; bearCount = 0;
   renderBigRoad(); updateStats();
 }
 
@@ -1196,6 +1222,17 @@ function toggleLog() {
   const log = document.getElementById('historyLog');
   log.style.display = log.style.display === 'none' ? 'block' : 'none';
 }
+
+// Restart game when timing inputs change
+document.getElementById('betTime').addEventListener('change', () => {
+  if (gameRunning) { stopGame(); startGame(); }
+});
+document.getElementById('bgTime').addEventListener('change', () => {
+  if (gameRunning) { stopGame(); startGame(); }
+});
+document.getElementById('candleMin').addEventListener('change', () => {
+  if (allTicks.length > 0) { buildCandles(); if (gameRunning) { stopGame(); startGame(); } }
+});
 
 // Initial render
 renderBigRoad();

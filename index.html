@@ -903,14 +903,14 @@ function runNextCandle() {
   let tickIdx = 0;
   const tickIntervalMs = candleDuration > 0 ? (3000 / Math.max(candleTicks.length, 1)) : 200; // replay at speed
 
-  // Timing: simulate candle in real-ish time (compressed)
-  // We'll do tick-by-tick replay over 4.5 seconds real time (candle duration compressed)
-  // Phase: first 70% = CLOSED (wait), last 30% = BETTING OPEN
+  // Timing flow: BET opens first → BET closes → wait/watch price → result
+  // BET TIME is included within BG TIME (not added on top)
+  // [0 → betEnd]: BETTING OPEN   [betEnd → bgEnd]: WAITING   [bgEnd]: RESULT
 
   const bgMinutes = parseFloat(document.getElementById('bgTime').value) || 10;
   const betMinutes = parseFloat(document.getElementById('betTime').value) || 2;
-  const replayDuration = (bgMinutes + betMinutes) * 60 * 1000; // ms
-  const bettingStartAt = bgMinutes * 60 * 1000; // betting opens after BG phase
+  const replayDuration = bgMinutes * 60 * 1000; // total round = BG TIME (includes BET)
+  const betEndAt = betMinutes * 60 * 1000;       // betting closes after BET TIME
   const startReal = Date.now();
 
   updateRound(currentCandleIdx + 1);
@@ -919,8 +919,10 @@ function runNextCandle() {
   // Reset candle progress
   document.getElementById('candleBarFill').style.width = '0%';
 
-  let bettingOpened = false;
+  // Betting opens immediately
+  let bettingClosed = false;
   let candleClosed = false;
+  openBetting();
 
   clearInterval(tickSimInterval);
   clearInterval(countdownInterval);
@@ -940,26 +942,28 @@ function runNextCandle() {
       updatePrice(tick.price, currentCandle);
     }
 
-    // Countdown timer
-    const remaining = Math.max(0, replayDuration - elapsed);
-    const remainSec = Math.ceil(remaining / 1000);
-
-    // Betting phase: last 40% of candle
-    if (!bettingOpened && elapsed >= bettingStartAt) {
-      bettingOpened = true;
-      openBetting();
+    // Phase 1: Betting open (0 → betEnd)
+    if (!bettingClosed && elapsed < betEndAt) {
+      const betRemain = Math.max(0, betEndAt - elapsed);
+      updateTimerRing(betRemain / betEndAt, betRemain / 1000, true);
     }
 
-    if (bettingOpened && !candleClosed) {
-      const bettingRemain = Math.max(0, replayDuration - elapsed);
-      const bettingDuration = replayDuration - bettingStartAt;
-      updateTimerRing(bettingRemain / bettingDuration, bettingRemain / 1000, true);
-    } else if (!bettingOpened) {
-      const waitRemain = Math.max(0, bettingStartAt - elapsed);
-      updateTimerRing(waitRemain / bettingStartAt, Math.ceil(waitRemain / 1000), false);
+    // Transition: close betting
+    if (!bettingClosed && elapsed >= betEndAt) {
+      bettingClosed = true;
+      enableBets(false);
+      updatePhase('WAITING...', false);
+      showNotif('ปิดรับเดิมพัน - รอผล...', true);
     }
 
-    // Candle close
+    // Phase 2: Waiting (betEnd → bgEnd)
+    if (bettingClosed && !candleClosed) {
+      const waitRemain = Math.max(0, replayDuration - elapsed);
+      const waitDuration = replayDuration - betEndAt;
+      updateTimerRing(waitRemain / waitDuration, waitRemain / 1000, false);
+    }
+
+    // Result
     if (progress >= 1 && !candleClosed) {
       candleClosed = true;
       clearInterval(tickSimInterval);

@@ -72,6 +72,47 @@
    - tick rate ปรับตามความเร็ว เพื่อให้ animation ลื่นที่ทุกระดับ
    - เหตุผล: ให้ user ทดสอบกลยุทธ์ได้เร็วขึ้นโดยไม่ต้องรอเวลาจริง
 
+8. แปลง Vercel Project + ระบบป้องกันการ Copy
+-------------------------------------------------------------------------------
+   โครงสร้าง:
+     vercel-project/
+     ├── pages/
+     │   ├── index.js          ← หน้า Login (ใส่ password)
+     │   ├── game.js           ← หน้า Big Road (protected)
+     │   └── api/
+     │       ├── auth.js       ← ตรวจ password → ออก JWT token (HttpOnly cookie)
+     │       └── data.js       ← serve CSV เป็น JSON (protected, ไม่ให้ download)
+     ├── middleware.js          ← block /game + /api/data ถ้าไม่มี token
+     ├── lib/jwt.js             ← JWT sign/verify (jose library)
+     ├── styles/game.css        ← CSS แยกไฟล์
+     ├── public/                ← ว่างเปล่า! (ไม่วาง data.csv ที่นี่เด็ดขาด)
+     ├── data/data.csv          ← อยู่ใน server เท่านั้น (152,905 ticks)
+     ├── next.config.js         ← CSP headers, ปิด source map, ปิด X-Powered-By
+     ├── .env.example           ← ตัวอย่าง APP_PASSWORD + JWT_SECRET
+     └── package.json           ← Next.js 14 + jose
+
+   ระบบป้องกัน (หลายชั้น):
+     1. JWT Authentication    → ต้อง login ถูกก่อนถึงจะเข้า /game ได้
+     2. HttpOnly Cookie       → JS อ่าน token ไม่ได้
+     3. Edge Middleware        → block ทุก request ไปยัง protected routes
+     4. CSV ไม่ serve ตรง     → /api/data แปลงเป็น JSON แล้วส่ง (no file download)
+     5. No-store headers      → ห้าม cache, ห้าม download
+     6. Disable right-click   → contextmenu blocked
+     7. Disable shortcuts     → F12, Ctrl+Shift+I/J/C, Ctrl+U/S/P blocked
+     8. Disable drag          → ลากข้อมูลไม่ได้
+     9. Disable select        → CSS user-select: none + @media print hidden
+    10. Debugger trap          → ตรวจ devtools ด้วย timing (ถ้าเปิด → หน้าว่าง)
+    11. No source maps         → productionBrowserSourceMaps: false
+    12. CSP headers            → Content-Security-Policy ป้องกัน XSS/injection
+    13. X-Frame-Options: DENY  → ไม่ให้ iframe embed
+
+   วิธี Deploy:
+     1. cd vercel-project
+     2. cp .env.example .env.local  แล้วแก้ค่า PASSWORD + SECRET
+     3. npm install
+     4. npm run dev            (ทดสอบ local)
+     5. vercel deploy          (deploy ขึ้น Vercel)
+
 ===============================================================================
   สรุปโครงสร้างเวลาใหม่ต่อ 1 รอบ (BG = 10 นาที, BET = 2 นาที):
   [BET: 2 นาที (วางเดิมพัน)] → [WAIT: 8 นาที (ดูราคา)] → ตรวจผล

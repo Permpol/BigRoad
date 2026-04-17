@@ -70,7 +70,7 @@ export default function GamePage() {
         <div className="dragon-left">&#128009;</div>
         <div className="dragon-right">&#128009;</div>
         <div className="table-title">BACCARAT</div>
-        <div className="table-subtitle">XAUUSD &middot; BIG ROAD EDITION</div>
+        <div className="table-subtitle">XAUUSD &middot; BIG ROAD EDITION &middot; v1.4.0</div>
 
         {/* betting */}
         <div className="betting-layout">

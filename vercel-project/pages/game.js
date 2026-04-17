@@ -193,14 +193,16 @@ window.__bootGame = function(){
   $('candleMin').addEventListener('change',function(){ if(allTicks.length){buildCandles(); if(gameRunning){stopGame();startGame();}} });
   $('speedSelect').addEventListener('change',function(){ if(gameRunning){clearInterval(tickSimInterval);clearInterval(countdownInterval);runNextCandle();} });
 
-  // fetch data from protected API
+  // auto-fetch ALL csv data from protected API
   fetch('/api/data',{credentials:'same-origin'})
     .then(function(r){ if(!r.ok) throw new Error('Unauthorized'); return r.json(); })
     .then(function(d){
       allTicks = d.ticks.map(function(t){ return {ts:parseDate(t.t), price:t.p}; })
                         .filter(function(t){ return t.ts!==null; });
       $('loadingOverlay').style.display='none';
-      if(!allTicks.length){ showNotif('No data',false); return; }
+      if(!allTicks.length){ showNotif('No data found',false); updatePhase('NO DATA',false); return; }
+      var info = d.files ? d.files.join(', ') : 'data';
+      showNotif('Auto-loaded: '+d.count.toLocaleString()+' ticks ['+info+']',true);
       buildCandles(); startGame();
     })
     .catch(function(e){

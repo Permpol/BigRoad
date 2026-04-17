@@ -7,20 +7,31 @@ export default function handler(req, res) {
 
   // middleware already verified JWT
 
-  const csvPath = path.join(process.cwd(), 'data', 'data.csv');
-  if (!fs.existsSync(csvPath))
-    return res.status(404).json({ error: 'Data file not found' });
+  const dataDir = path.join(process.cwd(), 'data');
+  if (!fs.existsSync(dataDir))
+    return res.status(404).json({ error: 'Data directory not found' });
 
-  const raw = fs.readFileSync(csvPath, 'utf-8');
-  const lines = raw.split('\n').slice(1); // skip header
+  // Auto-scan: read ALL .csv files in data/ folder
+  const csvFiles = fs.readdirSync(dataDir)
+    .filter(f => f.toLowerCase().endsWith('.csv'))
+    .sort(); // alphabetical = chronological if named by date
+
+  if (csvFiles.length === 0)
+    return res.status(404).json({ error: 'No CSV files found in data/' });
+
   const ticks = [];
 
-  for (const line of lines) {
-    const p = line.trim().split(',');
-    if (p.length < 2) continue;
-    const price = parseFloat(p[1]);
-    if (isNaN(price)) continue;
-    ticks.push({ t: p[0].trim(), p: price });
+  for (const file of csvFiles) {
+    const raw = fs.readFileSync(path.join(dataDir, file), 'utf-8');
+    const lines = raw.split('\n').slice(1); // skip header per file
+
+    for (const line of lines) {
+      const p = line.trim().split(',');
+      if (p.length < 2) continue;
+      const price = parseFloat(p[1]);
+      if (isNaN(price)) continue;
+      ticks.push({ t: p[0].trim(), p: price });
+    }
   }
 
   // Anti-download headers
@@ -28,5 +39,9 @@ export default function handler(req, res) {
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Content-Disposition', 'inline');
 
-  return res.status(200).json({ ticks });
+  return res.status(200).json({
+    files: csvFiles,
+    count: ticks.length,
+    ticks,
+  });
 }

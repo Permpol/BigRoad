@@ -56,7 +56,10 @@ export default function GamePage() {
 
     {/* loading overlay */}
     <div className="loading-overlay" id="loadingOverlay">
-      <div className="loading-text">LOADING DATA...</div>
+      <div className="loading-text" id="loadingTitle">LOADING DATA...</div>
+      <div className="loading-bar-wrap"><div className="loading-bar-fill" id="loadingBar"></div></div>
+      <div className="loading-status" id="loadingStatus">Connecting to server...</div>
+      <div className="loading-files" id="loadingFiles"></div>
     </div>
 
     {/* logout */}
@@ -70,7 +73,7 @@ export default function GamePage() {
         <div className="dragon-left">&#128009;</div>
         <div className="dragon-right">&#128009;</div>
         <div className="table-title">BACCARAT</div>
-        <div className="table-subtitle">XAUUSD &middot; BIG ROAD EDITION</div>
+        <div className="table-subtitle">XAUUSD &middot; BIG ROAD EDITION &middot; v1.4.0</div>
 
         {/* betting */}
         <div className="betting-layout">
@@ -151,6 +154,14 @@ export default function GamePage() {
 
       {/* log */}
       <div className="history-log" id="historyLog" style={{display:'none'}}></div>
+
+      {/* data info bar */}
+      <div className="data-info-bar" id="dataInfoBar" style={{display:'none'}}>
+        <span>FILES: <b className="data-info-val" id="infoFiles">-</b></span>
+        <span>TICKS: <b className="data-info-val" id="infoTicks">-</b></span>
+        <span>CANDLES: <b className="data-info-val" id="infoCandles">-</b></span>
+        <span>RANGE: <b className="data-info-val" id="infoRange">-</b></span>
+      </div>
     </div>
 
     {/* ═══ GAME ENGINE (inline — Next.js will minify in production) ═══ */}
@@ -193,26 +204,65 @@ window.__bootGame = function(){
   $('candleMin').addEventListener('change',function(){ if(allTicks.length){buildCandles(); if(gameRunning){stopGame();startGame();}} });
   $('speedSelect').addEventListener('change',function(){ if(gameRunning){clearInterval(tickSimInterval);clearInterval(countdownInterval);runNextCandle();} });
 
-  // auto-fetch ALL csv data from protected API
+  // auto-fetch ALL csv data from protected API (with status)
+  setLoadStatus(10,'Connecting to server...');
   fetch('/api/data',{credentials:'same-origin'})
-    .then(function(r){ if(!r.ok) throw new Error('Unauthorized'); return r.json(); })
+    .then(function(r){
+      setLoadStatus(30,'Downloading data from server...');
+      if(!r.ok) throw new Error('Unauthorized');
+      return r.json();
+    })
     .then(function(d){
+      var fileNames = d.files || ['data.csv'];
+      $('loadingFiles').textContent = fileNames.join(', ');
+      setLoadStatus(50,'Parsing '+d.count.toLocaleString()+' ticks from '+fileNames.length+' file(s)...');
+
       allTicks = d.ticks.map(function(t){ return {ts:parseDate(t.t), price:t.p}; })
                         .filter(function(t){ return t.ts!==null; });
-      $('loadingOverlay').style.display='none';
-      if(!allTicks.length){ showNotif('No data found',false); updatePhase('NO DATA',false); return; }
-      var info = d.files ? d.files.join(', ') : 'data';
-      showNotif('Auto-loaded: '+d.count.toLocaleString()+' ticks ['+info+']',true);
-      buildCandles(); startGame();
+
+      if(!allTicks.length){
+        setLoadStatus(100,'No valid data found');
+        setTimeout(function(){ $('loadingOverlay').style.display='none'; },1000);
+        showNotif('No data found',false); updatePhase('NO DATA',false);
+        return;
+      }
+
+      setLoadStatus(70,'Building '+$('candleMin').value+'min candles...');
+      buildCandles();
+
+      setLoadStatus(90,'Preparing game...');
+
+      // populate data info bar
+      var first = new Date(allTicks[0].ts).toUTCString().slice(5,16);
+      var last  = new Date(allTicks[allTicks.length-1].ts).toUTCString().slice(5,16);
+      $('infoFiles').textContent   = fileNames.join(', ');
+      $('infoTicks').textContent   = allTicks.length.toLocaleString();
+      $('infoCandles').textContent = candles5m.length.toLocaleString();
+      $('infoRange').textContent   = first+' \\u2192 '+last;
+      $('dataInfoBar').style.display = 'flex';
+
+      setLoadStatus(100,'Ready!');
+      setTimeout(function(){
+        $('loadingOverlay').style.display='none';
+        showNotif('Loaded: '+allTicks.length.toLocaleString()+' ticks \\u2192 '+candles5m.length+' candles ['+fileNames.join(', ')+']',true);
+        startGame();
+      }, 600);
     })
     .catch(function(e){
-      $('loadingOverlay').style.display='none';
+      setLoadStatus(100,'Error: '+e.message);
+      $('loadingTitle').textContent = 'LOAD FAILED';
+      $('loadingTitle').style.color = '#ff6b6b';
+      setTimeout(function(){ $('loadingOverlay').style.display='none'; },2000);
       showNotif('Load failed: '+e.message,false);
       updatePhase('ERROR',false);
     });
 };
 
 function $(id){ return document.getElementById(id); }
+function setLoadStatus(pct,msg){
+  var bar=$('loadingBar'); if(bar) bar.style.width=pct+'%';
+  var st=$('loadingStatus'); if(st) st.textContent=msg;
+}
 
 /* ─── DATE PARSE ────────────────────────────────── */
 function parseDate(s){
@@ -240,7 +290,8 @@ function buildCandles(){
     }
   }
   if(c) candles5m.push(c);
-  showNotif('Loaded: '+allTicks.length.toLocaleString()+' ticks \\u2192 '+candles5m.length+' candles',true);
+  // update info bar candle count
+  var ic=$('infoCandles'); if(ic) ic.textContent=candles5m.length.toLocaleString();
 }
 
 /* ─── GAME LOOP ─────────────────────────────────── */
